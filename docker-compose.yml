@@ -1,0 +1,6 @@
+version: "3.4"
+
+services:
+  http-lambda-bridge:
+    image: tiagostutz/http-lambda-bridge:local
+    build: .

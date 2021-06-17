@@ -1,0 +1,11 @@
+{
+  "posts": [
+    {
+      "id": 1,
+      "title": "Going serverless with HTTP Lambda Bridge",
+      "author": "http-lambda-bridge"
+    }
+  ],
+  "comments": [{ "id": 1, "body": "Really works. Easy!", "postId": 1 }],
+  "profile": { "name": "http-lambda-bridge" }
+}

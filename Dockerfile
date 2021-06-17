@@ -15,7 +15,9 @@ ADD /go.sum /app/
 RUN go mod download
 
 ADD /main.go /app/
-ADD /handlers /app/handlers
 
 # RUN go test -v -p 1
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/golang-lambda-container-demo
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/http-lambda-bridge
+
+FROM scratch
+COPY --from=BUILD /bin/http-lambda-bridge /bin/http-lambda-bridge

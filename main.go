@@ -3,82 +3,84 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
+	"github.com/gin-gonic/gin"
+	cors "github.com/itsjamie/gin-cors"
 	"github.com/sirupsen/logrus"
 )
 
 var proxyPass string
+var ginLambda *ginadapter.GinLambda
 
 func init() {
+
+	//flags parse
 	logLevel := "info"
 	flag.StringVar(&logLevel, "logLevel", "info", "Log level")
 	flag.StringVar(&proxyPass, "proxyPass", "http://localhost:80", "Endpoint of the service that will handle the request")
 	flag.Parse()
-}
 
-func appendHostToXForwardHeader(header http.Header, host string) {
-	// If we aren't the first proxy retain prior
-	// X-Forwarded-For information as a comma+space
-	// separated list and fold multiple headers into one.
-	if prior, ok := header["X-Forwarded-For"]; ok {
-		host = strings.Join(prior, ", ") + ", " + host
-	}
-	header.Set("X-Forwarded-For", host)
-}
-
-type proxy struct {
-}
-
-func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (interface{}, error) {
-	logrus.Debugf("Function invoked. Proxying to: %s", proxyPass)
-	urlProxy, err := url.Parse(proxyPass)
+	l, err := logrus.ParseLevel(logLevel)
 	if err != nil {
-		errMsg := fmt.Sprintf("Error parsing --proxyPass URL. Details: %s", err)
-		logrus.Errorf(errMsg)
-		return nil, fmt.Errorf(errMsg)
+		panic("Invalid loglevel")
 	}
-	if urlProxy.Scheme != "http" && urlProxy.Scheme != "https" {
-		errMsg := fmt.Sprintf("Unsupported protocal scheme: %s", urlProxy.Scheme)
-		logrus.Errorf(errMsg)
-		return nil, fmt.Errorf(errMsg)
-	}
+	logrus.SetLevel(l)
 
-	// create the client request
-	var httpClient = &http.Client{Timeout: 30 * time.Second}
+	logrus.Infof("logLevel=%s", logLevel)
+	logrus.Infof("proxyPass=%s", proxyPass)
 
-	// wrap the received body into a io.Reader to send the request body
-	payloadBuf := strings.NewReader(request.Body)
-	req, err := http.NewRequest(request.HTTPMethod, proxyPass, payloadBuf)
+	//setup gin routes
+	logrus.Debug("Initializing gin server")
+
+	router := gin.Default()
+
+	// setup CORS to allow everthing because we are running as a totally transparent proxy
+	router.Use(cors.Middleware(cors.Config{
+		Origins:         "*",
+		Methods:         "GET,POST",
+		RequestHeaders:  "Origin, Content-Type, Authorization",
+		ExposedHeaders:  "",
+		MaxAge:          24 * 3600 * time.Second,
+		Credentials:     true,
+		ValidateHeaders: false,
+	}))
+
+	//Catch all route
+	router.Any("/*anything", proxy)
+
+	ginLambda = ginadapter.New(router)
+}
+func proxy(c *gin.Context) {
+	urlProxyPass, err := url.Parse(proxyPass)
 	if err != nil {
-		errMsg := fmt.Sprintf("Error creating the request to the Proxied endpoint. --proxyPass: %s. Error: %s", proxyPass, err)
-		logrus.Errorf(errMsg)
-		return nil, fmt.Errorf(errMsg)
+		logrus.Errorf("Error parsing --proxyPass flag. Details: %s", err)
+		panic(err)
 	}
 
-	// copy the incoming headers to the proxied endpoint
-	for k, vv := range request.Headers {
-		req.Header.Add(k, vv)
+	proxy := httputil.NewSingleHostReverseProxy(urlProxyPass)
+	proxy.Director = func(req *http.Request) {
+		logrus.Debugf("Function invoked. Proxying to %s. Request data: %s", proxyPass, req)
+		req.Header = c.Request.Header
+		req.Host = urlProxyPass.Host
+		req.URL.Scheme = urlProxyPass.Scheme
+		req.URL.Host = urlProxyPass.Host
+		req.URL.Path = c.Param("anything")
 	}
 
-	//send the request to --proxyPass
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		logrus.Errorf("Error invoking --proxyPass endpoint. Details: %s", err)
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	return resp.Body, nil
-
+	proxy.ServeHTTP(c.Writer, c.Request)
+}
+func GinProxyHandler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	return ginLambda.ProxyWithContext(ctx, req)
 }
 
 func main() {
-	lambda.Start(HandleRequest)
+	logrus.Infof("Starting HTTP Lambda Bridge")
+	lambda.Start(GinProxyHandler)
 }
