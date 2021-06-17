@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: HTTP Lambda Bridge Demo Function
+
+Parameters:
+  LambdaContainerImageUri:
+    Type: String
+    Description: Container image uri containing the Bridge Lambda function and HTTP Service
+    MinLength: 5
+
+  CorsAllowOrigins:
+    Type: String
+    Description: Cors allowed origins to the API
+    Default: '*'
+
+Conditions:
+  IsAllowOriginsSet: 
+    !Not [!Equals [!Ref CorsAllowOrigins, '*'] ]
+
+Resources:
+
+  HttpAPIGateway:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: http-lambda-bridge-demo-proxy-api
+      Description: Proxy API Gateway for HTTP Lambda Bridge Demo
+      ProtocolType: HTTP
+      Target: !GetAtt HTTPBridgeImageLambdaFunction.Arn
+      CorsConfiguration:
+        AllowCredentials: !If [IsAllowOriginsSet, true, false]
+        AllowHeaders: 
+          - !Ref CorsAllowOrigins
+        AllowMethods: 
+          - '*'
+        AllowOrigins: 
+          - '*'
+        ExposeHeaders: 
+          - '*'
+
+  HttpAPIGatewayOverrides:
+    Type: AWS::ApiGatewayV2::ApiGatewayManagedOverrides
+    Properties: 
+      ApiId: !Ref HttpAPIGateway
+      Integration: 
+        PayloadFormatVersion: 1.0
+      Stage:
+        DefaultRouteSettings:
+          DetailedMetricsEnabled: true
+
+  HTTPBridgeImageLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      PackageType: Image
+      FunctionName: http-lambda-bridge-demo
+      Code:
+        ImageUri: !Ref LambdaContainerImageUri
+      Environment:
+        Variables:
+          LOG_LEVEL: debug
+          PROXY_PASS: http://localhost:3000
+      MemorySize: 128
+      TracingConfig:
+        Mode: Active
+      Timeout: 3
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  APILambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt HTTPBridgeImageLambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: root
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - xray:*
+            Resource: '*'
+
+Outputs:
+
+  APIEndpoint:
+    Value: !GetAtt HttpAPIGateway.ApiEndpoint
+
+  GolangFunctionArn:
+    Value: !GetAtt HTTPBridgeImageLambdaFunction.Arn
