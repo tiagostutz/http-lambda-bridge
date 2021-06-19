@@ -10,4 +10,4 @@ echo 'Starting HTTP service as the main process'
 ## change the above lines with your service startup command ##
 ##############################################################
 echo 'starting json-server in foreground'
-json-server --watch /data/demo-data.json
+json-server --watch /tmp/demo-data.json

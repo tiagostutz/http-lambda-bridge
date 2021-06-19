@@ -8,13 +8,13 @@ FROM node:16.3-alpine3.13
 
 # Demo stuff
 RUN npm install -g json-server
-ADD demo-data.json /data/demo-data.json
-
-# copy the bridge executable
-COPY --from=BRIDGE /bin/http-lambda-bridge /bin/http-lambda-bridge
+ADD demo-data.json /tmp/demo-data.json
 
 #################################################
 ### ...until here, without the ENTRYPOINT or CMD ###
+
+# copy the bridge executable
+COPY --from=BRIDGE /bin/http-lambda-bridge /bin/http-lambda-bridge
 
 # ADD the startup entrypoint script having your http service running in background
 # and the bridge executable running in foreground

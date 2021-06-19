@@ -10,5 +10,5 @@ Resources:
         ScanOnPush: true    
 
 Outputs:
-  DemoRepoUri:
+  HTTPLambdaBridgeDemoRepository:
     Value: !GetAtt HTTPLambdaBridgeDemoRepository.RepositoryUri
