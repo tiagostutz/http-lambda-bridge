@@ -53,10 +53,8 @@ ENTRYPOINT ["/startup.sh"]
 
 ```
 
-After building and deploying your function (see [build-deploy-aws-lambda.sh](demo/build-deploy-aws-lambda.sh in the demo)) go ahead and run:
-```bash
+After building and deploying your function (see [build-deploy-aws-lambda.sh](demo/build-deploy-aws-lambda.sh) in the demo) go ahead and `curl` your HTTP function address to see.
 
-```
 ### Environment Variables
 
 - LOG_LEVEL: trace | debug | info | warning | error | panic
