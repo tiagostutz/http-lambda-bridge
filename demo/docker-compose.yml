@@ -1,12 +1,9 @@
 version: "3.4"
 
 services:
-  demo:
-    image: tiagostutz/http-lambda-bridge-demo:local
-    build: .
+  http-lambda-bridge-demo:
+    image: tiagostutz/http-lambda-bridge:demo
     network_mode: bridge
+    build: .
     ports:
-      - 4004:3000
-    environment:
-      - LOG_LEVEL=debug
-      - PROXY_PASS=http://localhost:3000
+      - 3000:3000
