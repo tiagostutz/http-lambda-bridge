@@ -1,4 +1,4 @@
-FROM tiagostutz/http-lambda-bridge:0.1.0 AS BRIDGE
+FROM tiagostutz/http-lambda-bridge:0.1.3 AS BRIDGE
 
 FROM node:16.3-alpine3.13
 

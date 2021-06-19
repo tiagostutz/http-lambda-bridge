@@ -1,11 +1,12 @@
 #!/bin/sh
 
-# start the lambda bridge
-echo 'starting /bin/http-lambda-bridge in background'
-nohup  /bin/http-lambda-bridge --logLevel="$LOG_LEVEL" --proxyPass="$PROXY_PASS" &
-
-########################################################
-## change the above line with your entrypoint command ##
-########################################################
+echo 'Starting background HTTP service'
+##############################################################
+## change the above lines with your service startup command ##
+##############################################################
 echo 'starting json-server'
-json-server --watch /data/demo-data.json # start the http service
+nohup json-server --watch /data/demo-data.json  & # start the http service
+
+# start the lambda bridge
+echo 'Starting /bin/http-lambda-bridge in foreground'
+/bin/http-lambda-bridge --logLevel="$LOG_LEVEL" --proxyPass="$PROXY_PASS"

@@ -60,7 +60,7 @@ Resources:
       MemorySize: 128
       TracingConfig:
         Mode: Active
-      Timeout: 3
+      Timeout: 10
       Role: !GetAtt LambdaExecutionRole.Arn
 
   APILambdaPermission:

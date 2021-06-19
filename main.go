@@ -55,6 +55,8 @@ func init() {
 	//Catch all route
 	router.Any("/*anything", proxy)
 
+	time.Sleep(9 * time.Second)
+
 	ginLambda = ginadapter.New(router)
 }
 func proxy(c *gin.Context) {
