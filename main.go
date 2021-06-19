@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -23,8 +24,10 @@ func init() {
 
 	//flags parse
 	logLevel := "info"
+	httpServiceInitTimeout := int64(3000)
 	flag.StringVar(&logLevel, "logLevel", "info", "Log level")
 	flag.StringVar(&proxyPass, "proxyPass", "http://localhost:80", "Endpoint of the service that will handle the request")
+	flag.Int64Var(&httpServiceInitTimeout, "httpServiceInitTimeout", 5, "HTTP service bridged init timeout in seconds")
 	flag.Parse()
 
 	l, err := logrus.ParseLevel(logLevel)
@@ -35,6 +38,7 @@ func init() {
 
 	logrus.Infof("logLevel=%s", logLevel)
 	logrus.Infof("proxyPass=%s", proxyPass)
+	logrus.Infof("httpServiceInitTimeout=%d", httpServiceInitTimeout)
 
 	//setup gin routes
 	logrus.Debug("Initializing gin server")
@@ -55,10 +59,25 @@ func init() {
 	//Catch all route
 	router.Any("/*anything", proxy)
 
-	time.Sleep(9 * time.Second)
+	httpServiceInitTimeoutNano := httpServiceInitTimeout * int64(1000) * int64(1000) * int64(1000)
+	startAttemptTime := time.Now().UnixNano()
+	for {
+		_, err := http.Get(proxyPass)
+		if err != nil {
+			if time.Now().UnixNano()-startAttemptTime > httpServiceInitTimeoutNano {
+				logrus.Errorf("Timeout waiting for the HTTP service at % to be ready", proxyPass)
+				break
+			}
+			logrus.Warnf("HTTP service expected at %s not ready yet. Waiting...", proxyPass)
+			time.Sleep(200 * time.Millisecond)
+		} else {
+			break
+		}
+	}
 
 	ginLambda = ginadapter.New(router)
 }
+
 func proxy(c *gin.Context) {
 	urlProxyPass, err := url.Parse(proxyPass)
 	if err != nil {
@@ -67,6 +86,10 @@ func proxy(c *gin.Context) {
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(urlProxyPass)
+	proxy.ErrorHandler = func(rw http.ResponseWriter, r *http.Request, e error) {
+		logrus.Errorf("Error proxying the request, quitting function. Details: %s", e)
+		os.Exit(1)
+	}
 	proxy.Director = func(req *http.Request) {
 		logrus.Debugf("Function invoked. Proxying to %s. Request data: %s", proxyPass, req)
 		req.Header = c.Request.Header

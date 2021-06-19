@@ -3,3 +3,4 @@
 http-lambda-bridge \
     --loglevel="$LOG_LEVEL"
     --proxyPass="$PROXY_PASS"
+    --httpServiceInitTimeout="$HTTP_SERVICE_INIT_TIMEOUT"

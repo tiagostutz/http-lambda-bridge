@@ -33,4 +33,4 @@ apiUri=$(echo $out | cut -f1)
 
 echo "HTTP Lambda Bridge Demo API is running at $apiUri"
 set +x
-curl $apiUri/repo
+# curl $apiUri/repo

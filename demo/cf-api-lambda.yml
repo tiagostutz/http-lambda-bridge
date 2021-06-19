@@ -57,6 +57,7 @@ Resources:
         Variables:
           LOG_LEVEL: debug
           PROXY_PASS: http://localhost:3000
+          HTTP_SERVICE_INIT_TIMEOUT: 9
       MemorySize: 128
       TracingConfig:
         Mode: Active

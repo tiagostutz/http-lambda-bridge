@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: HTTP Lambda Bridge demo ECR Repo
 Resources:
 
-  DemoRepository:
+  HTTPLambdaBridgeDemoRepository:
     Type: AWS::ECR::Repository
     Properties: 
       RepositoryName: http-lambda-bridge-demo
@@ -11,4 +11,4 @@ Resources:
 
 Outputs:
   DemoRepoUri:
-    Value: !GetAtt DemoRepository.RepositoryUri
+    Value: !GetAtt HTTPLambdaBridgeDemoRepository.RepositoryUri
