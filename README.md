@@ -8,7 +8,7 @@ If you plan to migrate your monolith to AWS Lambda Functions, but can't wait unt
 
 You can check the [demo](demo) folder for a complete example on how to host a [json-server](https://www.npmjs.com/package/json-server) as a lambda function.
 
-## Hosting your Docker monolith on AWS Lambda 
+## Serving your Docker Restful API monolith as an AWS Lambda 
 
 First, create an `startup.sh` file that starts the lambda bridge in background and your HTTP Rest service as the main process of the image. Like this:
 ```bash
