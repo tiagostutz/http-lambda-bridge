@@ -18,6 +18,7 @@ import (
 )
 
 var proxyPass string
+var proxyMethod string
 var ginLambda *ginadapter.GinLambda
 
 func init() {
@@ -27,7 +28,8 @@ func init() {
 	httpServiceInitTimeout := int64(3000)
 	flag.StringVar(&logLevel, "logLevel", "info", "Log level")
 	flag.StringVar(&proxyPass, "proxyPass", "http://localhost:80", "Endpoint of the service that will handle the request")
-	flag.Int64Var(&httpServiceInitTimeout, "httpServiceInitTimeout", 5, "HTTP service bridged init timeout in seconds")
+	flag.StringVar(&proxyMethod, "proxyMethod", "POST", "HTTP method to use for the proxy")
+	flag.Int64Var(&httpServiceInitTimeout, "httpServiceInitTimeout", 15, "HTTP service bridged init timeout in seconds")
 	flag.Parse()
 
 	l, err := logrus.ParseLevel(logLevel)
@@ -35,6 +37,20 @@ func init() {
 		panic("Invalid loglevel")
 	}
 	logrus.SetLevel(l)
+
+	// defaults
+	if logLevel == "" {
+		logLevel = "info"
+	}
+	if proxyPass == "" {
+		proxyPass = "http://localhost:80"
+	}
+	if proxyMethod == "" {
+		proxyMethod = "POST"
+	}
+	if httpServiceInitTimeout == 0 {
+		httpServiceInitTimeout = 15
+	}
 
 	logrus.Infof("logLevel=%s", logLevel)
 	logrus.Infof("proxyPass=%s", proxyPass)
@@ -94,6 +110,7 @@ func proxy(c *gin.Context) {
 		logrus.Debugf("Function invoked. Proxying to %s. Request data: %s", proxyPass, req)
 		req.Header = c.Request.Header
 		req.Host = urlProxyPass.Host
+		req.Method = proxyMethod
 		req.URL.Scheme = urlProxyPass.Scheme
 		req.URL.Host = urlProxyPass.Host
 		req.URL.Path = c.Param("anything")

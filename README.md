@@ -30,7 +30,7 @@ echo 'starting HTTP Rest service in foreground'
 Second, build your Dockerfile like this:
 
 ```Dockerfile
-FROM tiagostutz/http-lambda-bridge:0.1.7 AS BRIDGE
+FROM tiagostutz/http-lambda-bridge:0.1.8 AS BRIDGE
 
 ### Your original Dockerfile from here... ###
 #############################################
@@ -59,6 +59,7 @@ After building and deploying your function (see [build-deploy-aws-lambda.sh](dem
 
 - LOG_LEVEL: trace | debug | info | warning | error | panic
 - PROXY_PASS: local endpoint of the HTTP Rest service bridging to
+- PROXY_METHOD: method to use in the request to proxy. GET | POST  
 - HTTP_SERVICE_INIT_TIMEOUT: maximum timeout to wait for the HTTP Rest service to be up and running
 
 

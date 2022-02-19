@@ -1,5 +1,5 @@
 # Get the Bridge binaries
-FROM tiagostutz/http-lambda-bridge:0.1.7 AS BRIDGE
+FROM tiagostutz/http-lambda-bridge:0.1.8 AS BRIDGE
 
 ### Your original Dockerfile from here... ###
 #############################################
