@@ -45,9 +45,6 @@ func init() {
 	if proxyPass == "" {
 		proxyPass = "http://localhost:80"
 	}
-	if proxyMethod == "" {
-		proxyMethod = "POST"
-	}
 	if httpServiceInitTimeout == 0 {
 		httpServiceInitTimeout = 15
 	}
@@ -110,7 +107,9 @@ func proxy(c *gin.Context) {
 		logrus.Debugf("Function invoked. Proxying to %s. Request data: %s", proxyPass, req)
 		req.Header = c.Request.Header
 		req.Host = urlProxyPass.Host
-		req.Method = proxyMethod
+		if proxyMethod != "" {
+			req.Method = proxyMethod
+		}
 		req.URL.Scheme = urlProxyPass.Scheme
 		req.URL.Host = urlProxyPass.Host
 		req.URL.Path = c.Param("anything")
